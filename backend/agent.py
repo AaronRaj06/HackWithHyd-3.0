@@ -17,12 +17,48 @@ HINDSIGHT_PIPELINE_ID = os.getenv("HINDSIGHT_PIPELINE_ID", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen3-32b")
 
+# Fallback models if the primary is unavailable
+FALLBACK_MODELS = [
+    "qwen/qwen3-32b",
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-20b",
+]
+
 HINDSIGHT_BASE_URL = "https://api.hindsight.vectorize.io/v1"
 
+if not GROQ_API_KEY or GROQ_API_KEY == "your_groq_api_key_here":
+    print("=" * 60)
+    print("WARNING: GROQ_API_KEY is not set!")
+    print("Please edit .env and add your Groq API key.")
+    print("Get one free at: https://console.groq.com/keys")
+    print("=" * 60)
+
 groq_client = OpenAI(
-    api_key=GROQ_API_KEY,
+    api_key=GROQ_API_KEY if GROQ_API_KEY and GROQ_API_KEY != "your_groq_api_key_here" else "dummy",
     base_url="https://api.groq.com/openai/v1",
 )
+
+
+def _call_llm(messages: list[dict], temperature: float = 0.3, max_tokens: int = 1200) -> str:
+    """Call Groq LLM with automatic fallback to other models if the primary fails."""
+    models_to_try = [LLM_MODEL] + [m for m in FALLBACK_MODELS if m != LLM_MODEL]
+    last_error = None
+
+    for model in models_to_try:
+        try:
+            response = groq_client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            last_error = e
+            continue
+
+    return f"All LLM models failed. Last error: {last_error}. Check your GROQ_API_KEY at https://console.groq.com/keys"
 
 
 # ─── Hindsight Memory Functions ───────────────────────────────────────────────
@@ -166,20 +202,15 @@ No similar incidents found in memory yet. Provide general best-practice guidance
 Note: As more incidents are resolved and retained, the agent will provide much more specific, memory-driven recommendations.
 """
 
-    # Step 3: Call Groq LLM
-    try:
-        response = groq_client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.3,
-            max_tokens=1200,
-        )
-        ai_response = response.choices[0].message.content
-    except Exception as e:
-        ai_response = f"LLM error: {str(e)}. Please check your GROQ_API_KEY."
+    # Step 3: Call Groq LLM (with fallback models)
+    ai_response = _call_llm(
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.3,
+        max_tokens=1200,
+    )
 
     return {
         "analysis": ai_response,
@@ -217,26 +248,17 @@ Description: {new_incident.get('description', 'No description')}
 
 Provide generic troubleshooting steps for this type of incident."""
 
-    try:
-        response = groq_client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.3,
-            max_tokens=600,
-        )
-        return {
-            "analysis": response.choices[0].message.content,
-            "memory_used": False,
-            "memories_recalled": 0,
-            "cited_incidents": [],
-        }
-    except Exception as e:
-        return {
-            "analysis": f"LLM error: {str(e)}",
-            "memory_used": False,
-            "memories_recalled": 0,
-            "cited_incidents": [],
-        }
+    ai_response = _call_llm(
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.3,
+        max_tokens=600,
+    )
+    return {
+        "analysis": ai_response,
+        "memory_used": False,
+        "memories_recalled": 0,
+        "cited_incidents": [],
+    }

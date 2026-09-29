@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from agent import analyze_incident, retain_incident, analyze_without_memory, hindsight_recall
+from backend.agent import analyze_incident, retain_incident, analyze_without_memory, hindsight_recall
 
 # ─── App Setup ────────────────────────────────────────────────────────────────
 
