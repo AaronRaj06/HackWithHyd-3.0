@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IncidentIQ — AI Incident Response Agent</title>
+  <meta name="description" content="AI-powered incident response agent that remembers every past incident and gets smarter over time using Hindsight memory." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Animated Background -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <!-- Header -->
+  <header class="header" id="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+          </svg>
+        </div>
+        <span class="logo-text">IncidentIQ</span>
+        <span class="logo-badge">AI-Powered</span>
+      </div>
+      <nav class="nav">
+        <button class="nav-btn active" onclick="showTab('dashboard')" id="tab-dashboard">Dashboard</button>
+        <button class="nav-btn" onclick="showTab('analyze')" id="tab-analyze">New Incident</button>
+        <button class="nav-btn" onclick="showTab('compare')" id="tab-compare">Before vs After</button>
+        <button class="nav-btn" onclick="showTab('memory')" id="tab-memory">Memory</button>
+      </nav>
+      <div class="header-status">
+        <span class="status-dot" id="api-status-dot"></span>
+        <span class="status-text" id="api-status-text">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- ── DASHBOARD TAB ── -->
+    <section class="tab-content active" id="tab-content-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Incident Command Center</h1>
+          <p class="page-subtitle">AI-powered by Hindsight memory — gets smarter with every incident resolved.</p>
+        </div>
+        <button class="btn btn-primary" onclick="showTab('analyze')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Incident
+        </button>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-red">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-active">0</div>
+            <div class="stat-label">Active Incidents</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-resolved">0</div>
+            <div class="stat-label">Resolved Today</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-memories">12</div>
+            <div class="stat-label">Memories in Agent</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon stat-icon-blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <div class="stat-value" id="stat-memory-hits">0</div>
+            <div class="stat-label">Memory Hits</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory Banner -->
+      <div class="memory-banner">
+        <div class="memory-banner-icon">🧠</div>
+        <div>
+          <strong>Hindsight Memory Active</strong> — This agent has ingested 12 past production incidents. Each new incident you submit is analyzed against this memory. The more incidents resolved, the smarter the agent becomes.
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="seedMemory()" id="seed-btn">Seed Memory</button>
+      </div>
+
+      <!-- Incident List -->
+      <div class="section-header">
+        <h2 class="section-title">Session Incidents</h2>
+        <span class="section-meta" id="incidents-count">0 incidents</span>
+      </div>
+      <div id="incidents-list" class="incidents-list">
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">No incidents yet</div>
+          <div class="empty-subtitle">Submit a new incident to see the agent in action</div>
+          <button class="btn btn-primary btn-sm" onclick="showTab('analyze')">Report First Incident</button>
+        </div>
+      </div>
+
+      <!-- Past Incidents from Seed Data -->
+      <div class="section-header" style="margin-top: 2.5rem;">
+        <h2 class="section-title">Agent Memory — Past Incidents</h2>
+        <span class="section-meta">Loaded into Hindsight</span>
+      </div>
+      <div id="seed-incidents-grid" class="seed-incidents-grid">
+        <div class="loading-shimmer" style="height: 120px; border-radius: 12px;"></div>
+        <div class="loading-shimmer" style="height: 120px; border-radius: 12px;"></div>
+        <div class="loading-shimmer" style="height: 120px; border-radius: 12px;"></div>
+      </div>
+    </section>
+
+    <!-- ── ANALYZE TAB ── -->
+    <section class="tab-content" id="tab-content-analyze">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Report New Incident</h1>
+          <p class="page-subtitle">Describe the incident — the agent will recall similar past events and provide targeted resolution steps.</p>
+        </div>
+      </div>
+
+      <div class="analyze-grid">
+        <!-- Form -->
+        <div class="glass-card">
+          <h2 class="card-title">Incident Details</h2>
+          <form id="incident-form" onsubmit="submitIncident(event)">
+            <div class="form-group">
+              <label class="form-label" for="inc-title">Incident Title *</label>
+              <input class="form-input" type="text" id="inc-title" placeholder="e.g. Database connection pool exhausted" required />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="inc-service">Service *</label>
+                <input class="form-input" type="text" id="inc-service" placeholder="e.g. payments-service" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="inc-severity">Severity *</label>
+                <select class="form-input form-select" id="inc-severity">
+                  <option value="P1">P1 — Critical</option>
+                  <option value="P2" selected>P2 — High</option>
+                  <option value="P3">P3 — Medium</option>
+                  <option value="P4">P4 — Low</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="inc-description">Description *</label>
+              <textarea class="form-input form-textarea" id="inc-description" rows="4"
+                placeholder="Describe what's happening, error messages, affected users, symptoms..." required></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="inc-reporter">Reporter</label>
+              <input class="form-input" type="text" id="inc-reporter" placeholder="Your name" />
+            </div>
+
+            <!-- Quick Fill Templates -->
+            <div class="quick-fill">
+              <span class="quick-fill-label">Quick fill:</span>
+              <button type="button" class="tag-btn" onclick="quickFill('db')">DB Crash</button>
+              <button type="button" class="tag-btn" onclick="quickFill('memory')">OOM Kill</button>
+              <button type="button" class="tag-btn" onclick="quickFill('latency')">Latency Spike</button>
+              <button type="button" class="tag-btn" onclick="quickFill('502')">502 Errors</button>
+              <button type="button" class="tag-btn" onclick="quickFill('cert')">Cert Expired</button>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="analyze-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Analyze with Memory
+            </button>
+          </form>
+        </div>
+
+        <!-- Result Panel -->
+        <div id="analysis-result-panel" class="analysis-result-panel">
+          <div class="result-placeholder">
+            <div class="result-placeholder-icon">🤖</div>
+            <div class="result-placeholder-title">Agent Ready</div>
+            <div class="result-placeholder-text">Submit an incident to see the AI analysis with Hindsight memory context.</div>
+            <div class="memory-indicator">
+              <div class="memory-pulse"></div>
+              <span>12 incidents in memory</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── COMPARE TAB ── -->
+    <section class="tab-content" id="tab-content-compare">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Before vs. After Memory</h1>
+          <p class="page-subtitle">See exactly how Hindsight memory transforms the agent's response quality.</p>
+        </div>
+      </div>
+
+      <div class="glass-card" style="margin-bottom: 1.5rem;">
+        <h2 class="card-title">Test Incident</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="cmp-title">Title *</label>
+            <input class="form-input" type="text" id="cmp-title" placeholder="Incident title" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cmp-service">Service *</label>
+            <input class="form-input" type="text" id="cmp-service" placeholder="Service name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="cmp-severity">Severity</label>
+            <select class="form-input form-select" id="cmp-severity">
+              <option value="P1">P1</option>
+              <option value="P2" selected>P2</option>
+              <option value="P3">P3</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cmp-description">Description *</label>
+          <textarea class="form-input form-textarea" id="cmp-description" rows="3" placeholder="Describe the incident..."></textarea>
+        </div>
+        <div class="quick-fill">
+          <span class="quick-fill-label">Try a scenario:</span>
+          <button type="button" class="tag-btn" onclick="quickFillCompare('db')">DB Connection Issue</button>
+          <button type="button" class="tag-btn" onclick="quickFillCompare('oom')">Memory OOM</button>
+          <button type="button" class="tag-btn" onclick="quickFillCompare('latency')">Cache Latency</button>
+        </div>
+        <button class="btn btn-primary" onclick="runComparison()" id="compare-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Run Comparison
+        </button>
+      </div>
+
+      <div id="compare-result" class="compare-grid" style="display:none;">
+        <div class="compare-panel compare-panel-bad">
+          <div class="compare-panel-header">
+            <div class="compare-badge compare-badge-bad">❌ Without Memory</div>
+            <div class="compare-label">Generic, stateless response</div>
+          </div>
+          <div class="compare-content" id="compare-without"></div>
+        </div>
+        <div class="compare-panel compare-panel-good">
+          <div class="compare-panel-header">
+            <div class="compare-badge compare-badge-good">✅ With Hindsight Memory</div>
+            <div class="compare-label">Memory-powered, specific response</div>
+          </div>
+          <div class="compare-stats" id="compare-stats"></div>
+          <div class="compare-content" id="compare-with"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── MEMORY TAB ── -->
+    <section class="tab-content" id="tab-content-memory">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Agent Memory</h1>
+          <p class="page-subtitle">Everything your agent has learned. Powered by Hindsight vector memory.</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="seedMemory()" id="seed-btn-memory">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            Seed Memory
+          </button>
+        </div>
+      </div>
+
+      <!-- Memory Search -->
+      <div class="glass-card" style="margin-bottom: 1.5rem;">
+        <div class="search-row">
+          <input class="form-input search-input" type="text" id="memory-query" placeholder="Search your agent's memory... (e.g. 'database connection')" />
+          <button class="btn btn-primary" onclick="searchMemory()" id="search-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search
+          </button>
+        </div>
+      </div>
+
+      <div id="memory-results" class="memory-results">
+        <div class="empty-state">
+          <div class="empty-icon">🧠</div>
+          <div class="empty-title">Search Agent Memory</div>
+          <div class="empty-subtitle">Query what your agent remembers about past incidents</div>
+        </div>
+      </div>
+
+      <!-- Seed Data Gallery -->
+      <div class="section-header" style="margin-top: 2.5rem;">
+        <h2 class="section-title">Memory Index — All Incidents</h2>
+        <span class="section-meta">12 incidents retained</span>
+      </div>
+      <div id="memory-gallery" class="seed-incidents-grid"></div>
+    </section>
+
+  </main>
+
+  <!-- Resolve Modal -->
+  <div class="modal-overlay" id="resolve-modal" onclick="closeResolveModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Resolve Incident</h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <input type="hidden" id="resolve-incident-id" />
+      <div class="form-group">
+        <label class="form-label">Root Cause *</label>
+        <textarea class="form-input form-textarea" id="resolve-root-cause" rows="2" placeholder="What was the root cause?"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Resolution Steps *</label>
+        <textarea class="form-input form-textarea" id="resolve-resolution" rows="3" placeholder="What steps resolved it?"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Engineer</label>
+          <input class="form-input" type="text" id="resolve-engineer" placeholder="Your name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration (min)</label>
+          <input class="form-input" type="number" id="resolve-duration" placeholder="30" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lessons Learned</label>
+        <textarea class="form-input form-textarea" id="resolve-lessons" rows="2" placeholder="What should the team remember?"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (comma-separated)</label>
+        <input class="form-input" type="text" id="resolve-tags" placeholder="database, postgres, connection-pool" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="submitResolve()">
+        🧠 Resolve & Retain Memory
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
