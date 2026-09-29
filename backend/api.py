@@ -170,9 +170,12 @@ def resolve_incident(req: ResolveIncidentRequest):
 
 @app.get("/api/incidents")
 def list_incidents():
-    """List all incidents in the current session"""
+    """List all incidents — shows seed data if session store is empty"""
     incidents = list(INCIDENTS_STORE.values())
-    incidents.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    if not incidents and SEED_DATA_PATH.exists():
+        with open(SEED_DATA_PATH) as f:
+            incidents = json.load(f)
+    incidents.sort(key=lambda x: x.get("timestamp", x.get("reported_at", "")), reverse=True)
     return {"incidents": incidents, "total": len(incidents)}
 
 
