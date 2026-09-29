@@ -39,13 +39,13 @@ echo ""
 
 # Start backend in background
 echo "[1/2] Starting FastAPI backend on port 8000..."
-cd "$BACKEND_DIR"
-uvicorn api:app --host 0.0.0.0 --port 8000 --reload &
+cd "$PROJECT_DIR"
+uvicorn backend.api:app --host 0.0.0.0 --port 8000 --reload &
 BACKEND_PID=$!
 echo "  Backend PID: $BACKEND_PID"
 
 # Wait for backend to be ready
-sleep 2
+sleep 3
 
 # Start frontend dev server
 echo "[2/2] Starting React dev server on port 3000..."

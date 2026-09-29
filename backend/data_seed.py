@@ -8,10 +8,10 @@ import json
 import sys
 from pathlib import Path
 
-# Add parent to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root to path so backend.agent resolves
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agent import retain_incident
+from backend.agent import retain_incident
 
 SEED_PATH = Path(__file__).parent.parent / "data" / "incidents.json"
 
